@@ -82,7 +82,7 @@ def parse_file(path: str):
     # debug print
     for y in range(height):
         for x in range(width):
-            print(output_bits[(y * width) + x], end="")
+            print("█" if output_bits[(y * width) + x] else ".", end="")
         print("")
 
     # compressing byte array to extreme RLE
@@ -163,10 +163,14 @@ def generate_header(data: list, var_name: str, width: int, height: int) -> None:
     lines.append(" * Pixel 0,0 is top-left.")
     lines.append(" */")
     lines.append("")
-    lines.append(f"#define {var_name.upper()}_WIDTH  {width}U")
-    lines.append(f"#define {var_name.upper()}_HEIGHT {height}U")
+    lines.append(f"static const Image_t {var_name} = " + "{")
+    lines.append(f"     .width = {width},")
+    lines.append(f"     .height = {height},")
+    lines.append(f"     .size = {len(data)},")
+    lines.append(f"     .data = {var_name}_DATA")
+    lines.append("};")
     lines.append("")
-    lines.append(f"static const uint8_t {var_name}[{len(data)}U] = {{")
+    lines.append(f"static const uint8_t {var_name}_DATA[{len(data)}U] = {{")
     for value in data:
         hex_str = f"0x{value:02X}"
         lines.append(f"     {hex_str},  /* {value} \t*/")
@@ -203,11 +207,11 @@ def main():
     var_name = sanitise_name(args.input)
     header = generate_header(data, var_name, width, height)
 
-    with open(f"{args.output}/{var_name}.h", "w") as f:
+    with open(f"{args.output}{var_name}.h", "w") as f:
         f.write(header)
 
     print(
-        f"Successfully compressed bmp to c array. Header file is located in {args.output}/{var_name}.h"
+        f"Successfully compressed bmp to c array. Header file is located in {args.output}{var_name}.h"
     )
 
 

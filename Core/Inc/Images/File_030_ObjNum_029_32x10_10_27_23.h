@@ -11,16 +11,14 @@
  * Pixel 0,0 is top-left.
  */
 
-#define FILE_030_OBJNUM_029_32X10_10_27_23_WIDTH  32U
-#define FILE_030_OBJNUM_029_32X10_10_27_23_HEIGHT 10U
-
 static const Image_t File_030_ObjNum_029_32x10_10_27_23 = {
 	.width = FILE_030_OBJNUM_029_32X10_10_27_23_WIDTH,
 	.height = FILE_030_OBJNUM_029_32X10_10_27_23_HEIGHT,
-	.data = File_030_ObjNum_029_32x10_10_27_23
+	.data = skib,
+	.size = 3
 };
 
-static const uint8_t File_030_ObjNum_029_32x10_10_27_23[55U] = { 0x26, /* 38 	*/
+static const uint8_t skib[55U] = { 0x26, /* 38 	*/
 0x02, /* 2 	*/
 0x02, /* 2 	*/
 0x02, /* 2 	*/

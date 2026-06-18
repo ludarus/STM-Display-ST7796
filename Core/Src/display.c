@@ -11,7 +11,26 @@
 #include "main.h"
 #include <stdbool.h>
 #include "image.h"
-#include <stdbool.h>
+#include <memory.h>
+
+#define ON_COLOR 0xFF
+#define OFF_COLOR 0x00
+
+#define CHUNK 8192
+
+//creating a buffer to load into the RAM for faster image display
+static uint8_t buf[2][CHUNK];
+static uint8_t activeBuf = 0;
+
+static uint8_t currentlyDrawing = 0;
+
+static uint8_t *drawPtr = 0;
+static uint8_t *drawEnd = 0;
+
+//DEBUG
+static uint32_t startTime;
+static uint32_t finalTime;
+//DEBUG
 
 // bit packing to save memory
 static uint8_t screenCopy[((480 * 320) + 7) / 8];
@@ -126,59 +145,119 @@ void DISPLAY_INIT(SPI_HandleTypeDef *spi) {
 
 void DISPLAY_WRITE(SPI_HandleTypeDef *spi, uint16_t x, uint16_t y,
 		Image_t *image, bool overWrite) {
-	// set column address command
-	DISPLAY_CMD(spi, 0x2A);
-	// parameters: starting col MSB, starting col LSB, ending col MSB, ending col LSB
-	uint8_t caset[] = { (uint8_t) (x >> 8), (uint8_t) x, (uint8_t) ((uint8_t) (x
-			+ image->width) >> 8), (uint8_t) (x + image->width) };
-	DISPLAY_DATA(spi, caset, 4);
+	if (!currentlyDrawing) {
 
-	// set row address command
-	DISPLAY_CMD(spi, 0x2B);
-	// parameters: starting row MSB, starting row LSB, ending row MSB, ending row LSB
-	uint8_t raset[] = { (uint8_t) (y >> 8), (uint8_t) y, (uint8_t) ((uint8_t) (y
-			+ image->height) >> 8), (uint8_t) (y + image->height) };
-	DISPLAY_DATA(spi, raset, 4);
+		// set column address command
+		DISPLAY_CMD(spi, 0x2A);
+		// parameters: starting col MSB, starting col LSB, ending col MSB, ending col LSB
+		uint8_t caset[] = { (uint8_t) (x >> 8), (uint8_t) (x & 0xFF),
+				(uint8_t) ((uint8_t) (x + image->width - 1) >> 8), (uint8_t) ((x
+						+ image->width - 1) & 0xFF) };
 
-	// decompressing image as a bit array. Storing statically as max size on heap to prevent ram overflows
-	static uint8_t dcompImage[((320 * 480) + 7) / 8];
-	uint32_t count = 0;
-	for (uint32_t i = 0; i < image->size; i++) {
-		for (uint8_t j = 0; j < image->data[i]; j++) {
-			if (i % 2) {
-				//pixel is high
-				SET_PIXEL(dcompImage, count);
-			} else {
-				//pixel is low
-				CLR_PIXEL(dcompImage, count);
-			}
-			count++;
-		}
-	}
+		DISPLAY_DATA(spi, caset, 4);
 
-	// modifying the cloned buffer
-	for (uint16_t h = 0; h < image->height; h++) {
-		for (uint16_t w = 0; w < image->width; w++) {
-			uint32_t globalpos = 480 * (y + h) + x + w;
-			uint32_t localpos = (image->width * h) + w;
-			if (overWrite) {
-				if (GET_PIXEL(dcompImage, localpos)) {
-					SET_PIXEL(screenCopy, globalpos);
+		// set row address command
+		DISPLAY_CMD(spi, 0x2B);
+		// parameters: starting row MSB, starting row LSB, ending row MSB, ending row LSB
+		uint8_t raset[] = { (uint8_t) (y >> 8), (uint8_t) (y & 0xFF),
+				(uint8_t) ((uint8_t) (y + image->height - 1) >> 8),
+				(uint8_t) ((y + image->height - 1) & 0xFF) };
+		DISPLAY_DATA(spi, raset, 4);
+
+		// decompressing image as a bit array. Storing statically as max size on heap to prevent ram overflows
+		static uint8_t dcompImage[((320 * 480) + 7) / 8];
+		uint32_t dcompImage_SIZE = 0;
+		for (uint32_t i = 0; i < image->size; i++) {
+			for (uint8_t j = 0; j < image->data[i]; j++) {
+				if (i % 2) {
+					//pixel is high, 1 % 2 = 1
+					SET_PIXEL(dcompImage, dcompImage_SIZE);
 				} else {
-					CLR_PIXEL(screenCopy, globalpos);
+					//pixel is low
+					CLR_PIXEL(dcompImage, dcompImage_SIZE);
 				}
-			} else {
-				OR_PIXEL(screenCopy, globalpos, GET_PIXEL(dcompImage,localpos));
+				dcompImage_SIZE++;
 			}
 		}
+
+		// modifying the cloned buffer
+		for (uint16_t h = 0; h < image->height; h++) {
+			for (uint16_t w = 0; w < image->width; w++) {
+				uint32_t globalpos = 480 * (y + h) + x + w;
+				uint32_t localpos = (image->width * h) + w;
+				if (overWrite) {
+					if (GET_PIXEL(dcompImage, localpos)) {
+						SET_PIXEL(screenCopy, globalpos);
+					} else {
+						CLR_PIXEL(screenCopy, globalpos);
+					}
+				} else {
+					OR_PIXEL(screenCopy, globalpos,
+							GET_PIXEL(dcompImage,localpos));
+				}
+			}
+		}
+
+		// write data command
+		DISPLAY_CMD(spi, 0x2C);
+
+		// setting to data mode
+		HAL_GPIO_WritePin(DISPLAY_DC_GPIO_Port, DISPLAY_DC_Pin, GPIO_PIN_RESET);
+
+		// selecting spi device
+		DISPLAY_SELECT();
+
+		// double buffering
+
+		//sending image data. chunking data by 2^16 bits
+		drawPtr = &dcompImage[0];
+		drawEnd = &dcompImage[dcompImage_SIZE];
+
+		//setting status to busy
+		currentlyDrawing = 1;
+
+		startTime = HAL_GetTick();
+		activeBuf = 0;
+		//checking if chunking is required or not
+		if (dcompImage_SIZE <= CHUNK) {
+			//not required
+			HAL_SPI_Transmit_DMA(spi, drawPtr, dcompImage_SIZE);
+			drawPtr = drawEnd;
+		} else {
+			//required
+			HAL_SPI_Transmit_DMA(spi, drawPtr, CHUNK);
+			drawPtr += CHUNK;
+			//loading the next chunk of the image into ram for faster transfer
+			memcpy(buf[activeBuf], drawPtr, CHUNK);
+		}
+	} else {
+		// called if function is already drawing when called
 	}
+}
 
-//	// write data command
-//	DISPLAY_CMD(spi, 0x2C);
-//
-//	// setting to data mode
-//	HAL_GPIO_WritePin(DISPLAY_DC_GPIO_Port, DISPLAY_DC_Pin, GPIO_PIN_RESET);
+//callback that is called when HAL_SPI_Transmit_DMA finishes
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
+	if (hspi->Instance == SPI1) {
+		if (drawPtr >= drawEnd) {
+			//done drawing
+			finalTime = HAL_GetTick() - startTime;
+			DISPLAY_DESELECT();
+			currentlyDrawing = 0;
+			return;
+		} else if (drawEnd - drawPtr < CHUNK) {
+			//partial chunk
+			HAL_SPI_Transmit_DMA(hspi, buf[activeBuf], drawEnd - drawPtr);
+			//done drawing criteria
+			drawPtr += CHUNK;
+		} else {
+			//full chunk
+			HAL_SPI_Transmit_DMA(hspi, buf[activeBuf], CHUNK);
+			drawPtr += CHUNK;
+			//loading the next chunk of the image into ram for faster transfer, and swapping buffers
+			activeBuf = !activeBuf;
+			memcpy(buf[activeBuf], drawPtr, CHUNK);
 
-	// write to display code here
+		}
+	}
 
 }
