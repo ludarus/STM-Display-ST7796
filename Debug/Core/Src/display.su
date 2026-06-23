@@ -7,5 +7,6 @@
 ../Core/Src/display.c:88:6:DISPLAY_LOCK_EXTENDED	32	static
 ../Core/Src/display.c:98:6:DISPLAY_INIT	24	static
 ../Core/Src/display.c:144:6:DISPLAY_FILL	32	static
-../Core/Src/display.c:214:6:DISPLAY_WRITE	96	static
-../Core/Src/display.c:410:6:HAL_SPI_TxCpltCallback	40	static
+../Core/Src/display.c:215:6:DISPLAY_REFRESH	32	static
+../Core/Src/display.c:277:6:DISPLAY_WRITE	96	static
+../Core/Src/display.c:475:6:HAL_SPI_TxCpltCallback	40	static

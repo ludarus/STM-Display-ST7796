@@ -233,6 +233,7 @@ def main():
             count = 0
             dirName = os.path.dirname(args.input)
             includes = []
+            images_array = []
 
             for possibleFile in os.listdir(dirName):
                 if os.path.isfile(f"{dirName}/{possibleFile}"):
@@ -248,12 +249,16 @@ def main():
                             f"Successfully compressed {dirName}/{possibleFile} to c array. Header file is located in {args.output}{var_name}.h"
                         )
                         includes.append(f'#include "{var_name}.h"')
+                        images_array.append(f"   &{var_name},")
                         count += 1
             if not args.preview:
+                images_array.insert(0, f"const Image_t *images[{count}] = " + "{")
+                images_array.append("};")
                 print(
                     f"successfully converted {count} files in {os.path.dirname(args.input)}"
                 )
                 print("include statement: \n" + "\n".join(includes))
+                print("images array: \n" + "\n".join(images_array))
 
         except ValueError as e:
             print(f"ERROR: {e}", file=sys.stderr)

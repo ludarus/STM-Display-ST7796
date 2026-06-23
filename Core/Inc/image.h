@@ -11,10 +11,10 @@
 #include "main.h"
 
 typedef struct {
-	const uint16_t width;
-	const uint16_t height;
-	const uint8_t *data;
-	const uint32_t size;
+  const uint16_t width;
+  const uint16_t height;
+  const uint8_t *data;
+  const uint32_t size;
 } Image_t;
 
 #endif /* INC_IMAGE_H_ */
