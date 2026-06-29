@@ -23,12 +23,11 @@
 /* USER CODE BEGIN Includes */
 #include "commands.h"
 #include "display-ili9488.h"
-#include "main.h"
+#include "font.h"
 
 #include "File_002_ObjNum_001_NEW_6_17_26.h"
+#include "File_005_ObjNum_004_480x320_6_18_26.h"
 #include "File_072_ObjNum_135_480x320_6_18_26.h"
-#include "File_079_ObjNum_149_480x320_6_17_26.h"
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -113,11 +112,15 @@ int main(void) {
   commandsInit(&hspi1);
 
   ILI9488_FILL(&hspi1);
-  ILI9488_LOAD(&hspi1, 0, 0, &File_002_ObjNum_001_NEW_6_17_26, true);
+  ILI9488_LOAD_IMAGE(&hspi1, 0, 0, &File_005_ObjNum_004_480x320_6_18_26, true);
 
-  HAL_Delay(100);
-  ILI9488_LOAD(&hspi1, 0, 0, &File_072_ObjNum_135_480x320_6_18_26, true);
-
+  // HAL_Delay(100);
+  // ILI9488_LOAD_IMAGE(&hspi1, 8, 50, &File_072_ObjNum_135_480x320_6_18_26, true);
+  ILI9488_LOAD_TEXT(&hspi1, 24, 300,
+                    "SLDKFJSDFUIAKJSDAF8IIU SD89 HFSDKJG HGF(*&^&*$()*@&#",
+                    font, CHARWIDTH, FONTSIZE, CHARHEIGHT);
+  //  ILI9488_LOAD_TEXT(&hspi1, 0, 64, "burgermanjoe", font, CHARWIDTH,
+  //  FONTSIZE, CHARHEIGHT);
   /* USER CODE END 2 */
 
   /* Infinite loop */

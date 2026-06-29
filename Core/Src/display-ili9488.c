@@ -9,6 +9,7 @@
  */
 
 // includes
+#include "character.h"
 #include "image.h"
 #include "main.h"
 #include <display-ili9488.h>
@@ -324,8 +325,8 @@ bool ILI9488_REFRESH(SPI_HandleTypeDef *spi) {
 }
 
 // loads image to screen buffer
-bool ILI9488_LOAD(SPI_HandleTypeDef *spi, uint16_t x, uint16_t y,
-                  Image_t *image, bool overWrite) {
+bool ILI9488_LOAD_IMAGE(SPI_HandleTypeDef *spi, uint16_t x, uint16_t y,
+                        Image_t *image, bool overWrite) {
   state.currentlyLoading = true;
   // decompressing image to cloned buffer
   uint32_t startTime = HAL_GetTick();
@@ -368,7 +369,8 @@ bool ILI9488_LOAD(SPI_HandleTypeDef *spi, uint16_t x, uint16_t y,
     //     }
     //
     //     if (globalPos % 8 != 0) {
-    //       for (uint8_t leading = 0; leading < 8 - (globalPos % 8); leading++) {
+    //       for (uint8_t leading = 0; leading < 8 - (globalPos % 8); leading++)
+    //       {
     //         if (isOn) {
     //           // pixel will always be on
     //           SET_PIXEL(state.screenCopy, globalPos);
@@ -413,7 +415,7 @@ bool ILI9488_LOAD(SPI_HandleTypeDef *spi, uint16_t x, uint16_t y,
           // current pixel as it is
           CLR_PIXEL(state.screenCopy, globalpos);
         }
-		  decompiledImageSize++;
+        decompiledImageSize++;
       }
       // incrementing the column and width
       if (++col == imgWidth) {
@@ -432,6 +434,64 @@ bool ILI9488_LOAD(SPI_HandleTypeDef *spi, uint16_t x, uint16_t y,
   state.dcompImage_SIZE = decompiledImageSize;
 
   // temporary call for convenience. TODO remove later
+  ILI9488_DRAW(spi);
+
+  return true;
+}
+
+bool ILI9488_LOAD_TEXT(
+    SPI_HandleTypeDef *spi, uint16_t x, uint16_t y, uint8_t text[],
+    Character_t *font,
+    /*width of character in pixels*/ uint8_t characterWidth,
+    /*number of characters in font*/ size_t fontSize,
+    /*height of character in pixels*/ size_t characterHeight) {
+
+  // parsing the text
+
+  uint16_t charCount = 0;
+  uint32_t decompiledImageSize = 0;
+  // iterating through every inputted character
+  for (uint16_t charIdx = 0; text[charIdx] != 0; charIdx++) {
+    if (charIdx > (ILI9488_WIDTH - x) / characterWidth) {
+      // cutting off string optimization
+      break;
+    }
+
+    // loading character
+    uint16_t startCol = (charIdx * characterWidth) + x;
+    uint16_t startRow = y;
+    uint16_t col = 0, row = 0;
+    uint8_t *currentCharacter =
+        (text[charIdx] < 32 || (size_t)(text[charIdx] - 32) >= fontSize)
+            ? font[0].data
+            : font[text[charIdx] - 32].data;
+
+    // loading one bit at a time
+    // TODO: switch to one byte at a time
+
+    for (uint32_t px = 0; px < characterWidth * characterHeight; px++) {
+      uint32_t globalpos = ILI9488_WIDTH * (startRow + row) + startCol + col;
+      // if the current pixel is in bounds of the screen
+      if (col + startCol < ILI9488_WIDTH && row + startRow < ILI9488_HEIGHT) {
+        if (GET_PIXEL(currentCharacter, px)) {
+          SET_PIXEL(state.screenCopy, globalpos);
+        }
+        decompiledImageSize++;
+      }
+      if (++col == characterWidth) {
+        col = 0;
+        row++;
+      }
+    }
+    charCount++;
+  }
+
+  state.x = x;
+  state.y = y;
+  state.width = charCount * characterWidth;
+  state.height = characterHeight;
+  state.dcompImage_SIZE = decompiledImageSize;
+
   ILI9488_DRAW(spi);
 
   return true;

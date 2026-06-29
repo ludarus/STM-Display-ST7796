@@ -29,10 +29,10 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_uart.h \
  ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_uart_ex.h \
  ../Core/Inc/commands.h ../Core/Inc/image.h ../Core/Inc/main.h \
- ../Core/Inc/display-ili9488.h \
+ ../Core/Inc/display-ili9488.h ../Core/Inc/character.h ../Core/Inc/font.h \
  ../Core/Inc/File_002_ObjNum_001_NEW_6_17_26.h \
- ../Core/Inc/File_072_ObjNum_135_480x320_6_18_26.h \
- ../Core/Inc/File_079_ObjNum_149_480x320_6_17_26.h
+ ../Core/Inc/File_005_ObjNum_004_480x320_6_18_26.h \
+ ../Core/Inc/File_072_ObjNum_135_480x320_6_18_26.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal.h:
 ../Core/Inc/stm32f0xx_hal_conf.h:
@@ -67,6 +67,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Core/Inc/image.h:
 ../Core/Inc/main.h:
 ../Core/Inc/display-ili9488.h:
+../Core/Inc/character.h:
+../Core/Inc/font.h:
 ../Core/Inc/File_002_ObjNum_001_NEW_6_17_26.h:
+../Core/Inc/File_005_ObjNum_004_480x320_6_18_26.h:
 ../Core/Inc/File_072_ObjNum_135_480x320_6_18_26.h:
-../Core/Inc/File_079_ObjNum_149_480x320_6_17_26.h:

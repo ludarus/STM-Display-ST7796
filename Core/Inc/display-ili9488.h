@@ -4,6 +4,7 @@
  *  Created on: Jun 23, 2026
  *      Author: Luke Fadel
  */
+#include "character.h"
 #include "image.h"
 #include "main.h"
 #include <stdbool.h>
@@ -29,6 +30,8 @@
 // sets pixel/bit to 0
 #define CLR_PIXEL(arr, bit) ((arr)[(bit) / 8] &= ~(1u << ((bit) % 8)))
 // shifting byte to desired bit and masking off the rest of the bit
+#define GET_PIXEL(array, bit)                                                  \
+  (((array)[(bit) / 8] >> ((bit) % 8)) & 1u) // returns 0u or 1u
 
 // TODO: optimize struct alignment for better memory usage
 // struct to store the current state of image rendering,
@@ -74,8 +77,12 @@ typedef struct {
 void ILI9488_INIT(SPI_HandleTypeDef *spi);
 bool ILI9488_REFRESH(SPI_HandleTypeDef *spi);
 void ILI9488_FILL(SPI_HandleTypeDef *spi);
-bool ILI9488_LOAD(SPI_HandleTypeDef *spi, uint16_t x, uint16_t y,
-                  Image_t *image, bool overWrite);
+bool ILI9488_LOAD_IMAGE(SPI_HandleTypeDef *spi, uint16_t x, uint16_t y,
+                        Image_t *image, bool overWrite);
+bool ILI9488_LOAD_TEXT(SPI_HandleTypeDef *spi, uint16_t x, uint16_t y,
+                       uint8_t text[], Character_t *font, uint8_t fontWidth,
+                       /*number of characters in font*/ size_t fontSize,
+                       /*number of bytes in character*/ size_t characterHeight);
 bool ILI9488_DRAW(SPI_HandleTypeDef *spi);
 
 #endif /* INC_DISPLAY_ILI9488_H_ */
