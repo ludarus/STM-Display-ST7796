@@ -5,15 +5,14 @@
  *      Author: Luke Fadel
  */
 
-#ifndef INC_COMMANDS_H_
-#define INC_COMMANDS_H_
+#ifndef INC_COMMANDS_USART_H_
+#define INC_COMMANDS_USART_H_
 
 #include "image.h"
 
-// public functions. just getters and setters
-uint8_t *getCommandBuffer(void);
-size_t getCommandSize(void);
-void commandsInit(SPI_HandleTypeDef *spiInterface);
+// public functions
+void usartCommandsInit(UART_HandleTypeDef *uartInterface,
+                       SPI_HandleTypeDef *spiInterface);
 
 // byte array struct to easily encode the size of a string
 typedef struct {
@@ -31,4 +30,4 @@ typedef struct {
   const ByteArray_t (*action)(void);
 } Command_t;
 
-#endif /* INC_COMMANDS_H_ */
+#endif /* INC_COMMANDS_USART_H_ */

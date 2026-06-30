@@ -4,8 +4,8 @@
  *  Created on: Jun 19, 2026
  *      Author: Luke Fadel
  */
-#include "commands.h"
 #include "main.h"
+#include <commands-usart.h>
 #include <display-ili9488.h>
 #include <stdbool.h>
 
@@ -183,12 +183,14 @@ uint8_t commandBuffer[255];
 // public functions
 
 // initialization sequence. currently just a setter that takes the serial input
-void commandsInit(SPI_HandleTypeDef *spiInterface) { spi = spiInterface; }
-
-uint8_t *getCommandBuffer(void) { return commandBuffer; }
-
-size_t getCommandSize(void) { return sizeof(commandBuffer); }
-
+void usartCommandsInit(
+    /*the usart connection*/ UART_HandleTypeDef *uartInterface,
+    /*for interfacing with the display*/ SPI_HandleTypeDef *spiInterface) {
+  spi = spiInterface;
+  // DMA serial command recieve until IDLE
+  HAL_UARTEx_ReceiveToIdle_DMA(uartInterface, commandBuffer,
+                               sizeof(commandBuffer));
+}
 //--------------------------------------------------------------------------------
 // command handles
 
